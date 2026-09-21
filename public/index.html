@@ -2,55 +2,211 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>p1m - Visual Canvas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>p1m Automation Platform</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jerosoler/Drawflow/dist/drawflow.min.css">
   <script src="https://cdn.jsdelivr.net/gh/jerosoler/Drawflow/dist/drawflow.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: sans-serif; background: #0f172a; color: #f8fafc; height: 100vh; display: flex; flex-direction: column; }
-    header { padding: 12px 20px; background: #1e293b; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
-    .toolbar { display: flex; gap: 10px; }
-    button { background: #38bdf8; color: #0f172a; border: none; padding: 8px 14px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-    button.run { background: #22c55e; color: #fff; }
-    #drawflow { flex: 1; width: 100%; height: 100%; background: #0b1120; background-size: 25px 25px; background-image: radial-gradient(#1e293b 1px, transparent 1px); }
-    .drawflow .drawflow-node { background: #1e293b; border: 1px solid #38bdf8; color: #fff; border-radius: 8px; padding: 12px; min-width: 150px; }
-    .drawflow .drawflow-node .input, .drawflow .drawflow-node .output { background: #38bdf8; }
-    #console { position: fixed; bottom: 0; left: 0; right: 0; max-height: 140px; background: rgba(2, 6, 23, 0.9); padding: 10px; border-top: 1px solid #334155; font-family: monospace; font-size: 12px; overflow-y: auto; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b1120; color: #f8fafc; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+    /* Top Bar */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      z-index: 20;
+    }
+    .brand { font-size: 1.1rem; font-weight: 800; color: #38bdf8; white-space: nowrap; }
+    .toolbar { display: flex; gap: 6px; flex-wrap: wrap; }
+    
+    button {
+      background: #1e293b;
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    button.run-btn { background: #16a34a; color: #fff; border-color: #22c55e; }
+    button.save-btn { background: #6366f1; color: #fff; border-color: #818cf8; }
+
+    /* Canvas View */
+    #drawflow {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      background-color: #030712;
+      background-size: 24px 24px;
+      background-image: radial-gradient(#1f2937 1.5px, transparent 1.5px);
+      touch-action: none;
+    }
+
+    .drawflow .drawflow-node {
+      background: #111827;
+      border: 1px solid #38bdf8;
+      color: #f3f4f6;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.8rem;
+    }
+    .drawflow .drawflow-node .input, .drawflow .drawflow-node .output { background: #38bdf8; width: 12px; height: 12px; }
+
+    /* Bottom Sheet on Mobile / Slide Drawer on Desktop */
+    .modal {
+      position: fixed;
+      bottom: -100%;
+      left: 0;
+      right: 0;
+      background: #111827;
+      border-top: 2px solid #38bdf8;
+      padding: 16px;
+      transition: bottom 0.3s ease;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 -10px 25px rgba(0,0,0,0.8);
+    }
+    @media (min-width: 768px) {
+      .modal {
+        top: 0;
+        bottom: 0;
+        left: auto;
+        right: -320px;
+        width: 300px;
+        border-top: none;
+        border-left: 2px solid #38bdf8;
+        transition: right 0.3s ease;
+      }
+      .modal.active { right: 0; bottom: 0; }
+    }
+    .modal.active { bottom: 0; }
+    .modal h3 { font-size: 0.95rem; color: #38bdf8; }
+    .modal label { font-size: 0.72rem; color: #9ca3af; }
+    .modal input, .modal select {
+      background: #1f2937;
+      border: 1px solid #374151;
+      color: #fff;
+      padding: 7px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      width: 100%;
+    }
+    .modal .btn-row { display: flex; gap: 8px; margin-top: 6px; }
+    .modal .btn-row button { flex: 1; padding: 8px; }
+    .close-btn { background: #ef4444; color: #fff; border: none; }
+
+    /* Console logs */
+    #console {
+      max-height: 70px;
+      background: #020617;
+      border-top: 1px solid #1f2937;
+      padding: 6px 10px;
+      font-family: monospace;
+      font-size: 11px;
+      overflow-y: auto;
+      color: #94a3b8;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h2>⚡ p1m Builder</h2>
+    <div class="brand">⚡ p1m</div>
     <div class="toolbar">
-      <button onclick="addNode('Webhook')">+ Webhook</button>
-      <button onclick="addNode('HTTP Request')">+ HTTP Request</button>
-      <button class="run" onclick="executeCanvas()">▶ Run Workflow</button>
+      <button onclick="addWebhookNode()">+ Webhook</button>
+      <button onclick="addHttpNode()">+ HTTP</button>
+      <button class="save-btn" onclick="saveWorkflowLocal()">💾 Save</button>
+      <button class="run-btn" onclick="executeWorkflow()">▶ Run</button>
     </div>
   </header>
 
   <div id="drawflow"></div>
 
-  <div id="console">Log: Canvas ready. Nodes add karein aur "Run Workflow" dabayein.</div>
+  <!-- Responsive Drawer (Mobile: Bottom Sheet | Desktop: Side Drawer) -->
+  <div class="modal" id="configModal">
+    <h3>⚙️ Node Config</h3>
+    <label>Node Name</label>
+    <input type="text" id="cfgNodeName" readonly>
+    <label>Method</label>
+    <select id="cfgMethod">
+      <option value="GET">GET</option>
+      <option value="POST">POST</option>
+    </select>
+    <label>Endpoint URL</label>
+    <input type="text" id="cfgUrl" placeholder="https://jsonplaceholder.typicode.com/todos/1">
+    <div class="btn-row">
+      <button onclick="saveNodeConfig()">Save</button>
+      <button class="close-btn" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+
+  <div id="console">Status: Ready. Nodes tap karein configure karne ke liye.</div>
 
   <script>
     const container = document.getElementById("drawflow");
     const editor = new Drawflow(container);
     editor.reroute = true;
+    editor.editor_mode = 'edit';
     editor.start();
 
-    // Initial Trigger Node
-    editor.addNode('trigger', 0, 1, 50, 100, 'trigger', {}, '<div><b>Trigger: Webhook</b></div>');
-
-    function addNode(name) {
-      const id = Date.now();
-      editor.addNode(name, 1, 1, 250, 150, name.toLowerCase(), {}, `<div><b>Action: ${name}</b></div>`);
+    // Auto load saved workflow or set default
+    const saved = localStorage.getItem('p1m_workflow');
+    if (saved) {
+      editor.import(JSON.parse(saved));
+    } else {
+      editor.addNode('trigger', 0, 1, 30, 80, 'trigger', { type: 'trigger' }, '<div><b>⚡ Start Trigger</b></div>');
     }
 
-    async function executeCanvas() {
+    let currentNodeId = null;
+
+    function addWebhookNode() {
+      editor.addNode('webhook', 1, 1, 180, 100, 'webhook', { type: 'webhook' }, '<div><b>🔗 Webhook</b></div>');
+    }
+
+    function addHttpNode() {
+      editor.addNode('http', 1, 1, 200, 200, 'http', { type: 'http', method: 'GET', url: 'https://jsonplaceholder.typicode.com/todos/1' }, '<div><b>🌐 HTTP API</b></div>');
+    }
+
+    editor.on('nodeSelected', function(id) {
+      currentNodeId = id;
+      const node = editor.getNodeFromId(id);
+      document.getElementById('cfgNodeName').value = node.name;
+      document.getElementById('cfgMethod').value = node.data.method || 'GET';
+      document.getElementById('cfgUrl').value = node.data.url || '';
+      document.getElementById('configModal').classList.add('active');
+    });
+
+    function closeModal() {
+      document.getElementById('configModal').classList.remove('active');
+    }
+
+    function saveNodeConfig() {
+      if (!currentNodeId) return;
+      const node = editor.getNodeFromId(currentNodeId);
+      node.data.method = document.getElementById('cfgMethod').value;
+      node.data.url = document.getElementById('cfgUrl').value;
+      document.getElementById('console').textContent = `Node #${currentNodeId} updated.`;
+      closeModal();
+    }
+
+    function saveWorkflowLocal() {
       const data = editor.export();
-      const log = document.getElementById('console');
-      log.textContent = "Executing workflow: " + JSON.stringify(data.drawflow.Home.data);
+      localStorage.setItem('p1m_workflow', JSON.stringify(data));
+      document.getElementById('console').textContent = "Workflow saved locally!";
+    }
+
+    async function executeWorkflow() {
+      const data = editor.export();
+      const consoleBox = document.getElementById('console');
+      consoleBox.textContent = "Running workflow...";
 
       try {
         const res = await fetch('/api/run-workflow', {
@@ -58,10 +214,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ graph: data.drawflow.Home.data })
         });
-        const resData = await res.json();
-        log.textContent = "Execution Success: " + JSON.stringify(resData, null, 2);
-      } catch(err) {
-        log.textContent = "Error: " + err.message;
+        const result = await res.json();
+        consoleBox.textContent = "Execution Result: " + JSON.stringify(result, null, 2);
+      } catch (err) {
+        consoleBox.textContent = "Error: " + err.message;
       }
     }
   </script>
