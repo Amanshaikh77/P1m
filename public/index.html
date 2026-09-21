@@ -3,117 +3,166 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>p1m Automation Platform</title>
+  <title>p1m Studio Pro</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jerosoler/Drawflow/dist/drawflow.min.css">
   <script src="https://cdn.jsdelivr.net/gh/jerosoler/Drawflow/dist/drawflow.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0b1120; color: #f8fafc; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #030712; color: #f8fafc; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-    /* Top Bar */
     header {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
       padding: 8px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      gap: 8px;
       z-index: 20;
     }
-    .brand { font-size: 1.1rem; font-weight: 800; color: #38bdf8; white-space: nowrap; }
-    .toolbar { display: flex; gap: 6px; flex-wrap: wrap; }
-    
+    .brand { font-size: 1.1rem; font-weight: 800; color: #38bdf8; }
+    .toolbar { display: flex; gap: 5px; flex-wrap: wrap; }
+
     button {
       background: #1e293b;
-      color: #38bdf8;
-      border: 1px solid #38bdf8;
-      padding: 6px 10px;
+      color: #94a3b8;
+      border: 1px solid #334155;
+      padding: 6px 9px;
       border-radius: 6px;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       cursor: pointer;
       touch-action: manipulation;
     }
-    button.run-btn { background: #16a34a; color: #fff; border-color: #22c55e; }
-    button.save-btn { background: #6366f1; color: #fff; border-color: #818cf8; }
+    button.btn-run { background: #16a34a; color: #fff; border: none; font-weight: bold; }
+    button.btn-clear { border-color: #ef4444; color: #f87171; }
 
-    /* Canvas View */
+    /* Canvas Area */
     #drawflow {
       flex: 1;
       width: 100%;
       height: 100%;
       background-color: #030712;
-      background-size: 24px 24px;
-      background-image: radial-gradient(#1f2937 1.5px, transparent 1.5px);
-      touch-action: none;
+      background-size: 20px 20px;
+      background-image: radial-gradient(#1e293b 1px, transparent 1px);
+      position: relative;
     }
 
+    /* Node Container - Overflow VISIBLE so pins never get clipped */
     .drawflow .drawflow-node {
-      background: #111827;
-      border: 1px solid #38bdf8;
-      color: #f3f4f6;
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 0.8rem;
+      background: #0f172a !important;
+      border: 1.5px solid #38bdf8 !important;
+      color: #fff !important;
+      border-radius: 8px !important;
+      padding: 10px 14px !important;
+      min-width: 130px !important;
+      font-size: 0.8rem !important;
+      overflow: visible !important;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
     }
-    .drawflow .drawflow-node .input, .drawflow .drawflow-node .output { background: #38bdf8; width: 12px; height: 12px; }
 
-    /* Bottom Sheet on Mobile / Slide Drawer on Desktop */
-    .modal {
+    .drawflow .drawflow-node.node-success {
+      border-color: #22c55e !important;
+      box-shadow: 0 0 16px rgba(34, 197, 94, 0.7) !important;
+    }
+
+    /* Input and Output Connection Points */
+    .drawflow .drawflow-node .inputs,
+    .drawflow .drawflow-node .outputs {
+      width: auto !important;
+    }
+
+    .drawflow .drawflow-node .input,
+    .drawflow .drawflow-node .output {
+      width: 20px !important;
+      height: 20px !important;
+      background: #38bdf8 !important;
+      border: 2px solid #030712 !important;
+      border-radius: 50% !important;
+      cursor: pointer !important;
+      z-index: 10 !important;
+    }
+
+    .drawflow .drawflow-node .input {
+      left: -10px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      position: absolute !important;
+    }
+
+    .drawflow .drawflow-node .output {
+      right: -10px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      position: absolute !important;
+    }
+
+    /* Active Highlight during Tap-to-Connect */
+    .pin-active {
+      background: #f59e0b !important;
+      box-shadow: 0 0 12px #f59e0b !important;
+      transform: translateY(-50%) scale(1.3) !important;
+    }
+
+    /* Connection Line */
+    .drawflow .connection .main-path {
+      stroke: #38bdf8 !important;
+      stroke-width: 3px !important;
+    }
+
+    /* Bottom Sheet */
+    .bottom-sheet {
       position: fixed;
-      bottom: -100%;
       left: 0;
       right: 0;
-      background: #111827;
+      bottom: 0;
+      background: #0f172a;
       border-top: 2px solid #38bdf8;
-      padding: 16px;
-      transition: bottom 0.3s ease;
+      border-radius: 14px 14px 0 0;
+      padding: 14px;
       z-index: 100;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      box-shadow: 0 -10px 25px rgba(0,0,0,0.8);
+      max-height: 70vh;
+      overflow-y: auto;
+      transform: translateY(105%);
+      transition: transform 0.2s ease-out;
     }
-    @media (min-width: 768px) {
-      .modal {
-        top: 0;
-        bottom: 0;
-        left: auto;
-        right: -320px;
-        width: 300px;
-        border-top: none;
-        border-left: 2px solid #38bdf8;
-        transition: right 0.3s ease;
-      }
-      .modal.active { right: 0; bottom: 0; }
+    .bottom-sheet.open {
+      transform: translateY(0);
     }
-    .modal.active { bottom: 0; }
-    .modal h3 { font-size: 0.95rem; color: #38bdf8; }
-    .modal label { font-size: 0.72rem; color: #9ca3af; }
-    .modal input, .modal select {
-      background: #1f2937;
-      border: 1px solid #374151;
-      color: #fff;
-      padding: 7px;
-      border-radius: 6px;
-      font-size: 0.8rem;
+    .bottom-sheet h3 { font-size: 0.95rem; color: #38bdf8; margin-bottom: 8px; }
+    .bottom-sheet input, .bottom-sheet select, .bottom-sheet textarea {
       width: 100%;
+      padding: 7px;
+      margin-bottom: 8px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #fff;
+      border-radius: 6px;
+      font-size: 0.78rem;
     }
-    .modal .btn-row { display: flex; gap: 8px; margin-top: 6px; }
-    .modal .btn-row button { flex: 1; padding: 8px; }
-    .close-btn { background: #ef4444; color: #fff; border: none; }
-
-    /* Console logs */
-    #console {
-      max-height: 70px;
+    .node-output-box {
       background: #020617;
-      border-top: 1px solid #1f2937;
+      padding: 8px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #22c55e;
+      white-space: pre-wrap;
+      max-height: 100px;
+      overflow-y: auto;
+      margin-bottom: 8px;
+    }
+    .action-row { display: flex; gap: 8px; margin-top: 6px; }
+    .action-row button { flex: 1; padding: 8px; }
+
+    #console {
+      height: 55px;
+      background: #020617;
+      border-top: 1px solid #1e293b;
       padding: 6px 10px;
       font-family: monospace;
       font-size: 11px;
+      color: #38bdf8;
       overflow-y: auto;
-      color: #94a3b8;
     }
   </style>
 </head>
@@ -121,103 +170,201 @@
   <header>
     <div class="brand">⚡ p1m</div>
     <div class="toolbar">
-      <button onclick="addWebhookNode()">+ Webhook</button>
-      <button onclick="addHttpNode()">+ HTTP</button>
-      <button class="save-btn" onclick="saveWorkflowLocal()">💾 Save</button>
-      <button class="run-btn" onclick="executeWorkflow()">▶ Run</button>
+      <button onclick="addNode('http')">+ HTTP</button>
+      <button onclick="addNode('ai')">+ AI</button>
+      <button class="btn-clear" onclick="resetCanvas()">Clear</button>
+      <button class="btn-run" onclick="runWorkflow()">▶ Run</button>
     </div>
   </header>
 
   <div id="drawflow"></div>
 
-  <!-- Responsive Drawer (Mobile: Bottom Sheet | Desktop: Side Drawer) -->
-  <div class="modal" id="configModal">
-    <h3>⚙️ Node Config</h3>
-    <label>Node Name</label>
-    <input type="text" id="cfgNodeName" readonly>
-    <label>Method</label>
-    <select id="cfgMethod">
-      <option value="GET">GET</option>
-      <option value="POST">POST</option>
-    </select>
-    <label>Endpoint URL</label>
-    <input type="text" id="cfgUrl" placeholder="https://jsonplaceholder.typicode.com/todos/1">
-    <div class="btn-row">
-      <button onclick="saveNodeConfig()">Save</button>
-      <button class="close-btn" onclick="closeModal()">Close</button>
+  <!-- Bottom Sheet for Inspector -->
+  <div class="bottom-sheet" id="sheet">
+    <h3 id="sheetTitle">Node Inspector</h3>
+    
+    <label style="font-size: 11px; color:#94a3b8;">Output Data:</label>
+    <div class="node-output-box" id="nodeDataOutput">No execution data yet.</div>
+
+    <div id="httpControls">
+      <label style="font-size: 11px; color:#94a3b8;">API Endpoint:</label>
+      <input type="text" id="nodeUrl" placeholder="https://jsonplaceholder.typicode.com/todos/1">
+      <select id="nodeMethod">
+        <option value="GET">GET</option>
+        <option value="POST">POST</option>
+      </select>
+    </div>
+
+    <div id="aiControls" style="display: none;">
+      <label style="font-size: 11px; color:#94a3b8;">AI Instructions:</label>
+      <textarea id="nodePrompt" rows="2" placeholder="Analyze incoming data"></textarea>
+    </div>
+
+    <div class="action-row">
+      <button style="background:#2563eb; color:#fff; border:none;" onclick="saveConfig()">Save</button>
+      <button style="background:#dc2626; color:#fff; border:none;" onclick="removeNode()">Delete</button>
+      <button onclick="closeSheet()">Close</button>
     </div>
   </div>
 
-  <div id="console">Status: Ready. Nodes tap karein configure karne ke liye.</div>
+  <div id="console">Ready. Right dot (OUT) se Left dot (IN) par tap ya drag karein.</div>
 
   <script>
     const container = document.getElementById("drawflow");
     const editor = new Drawflow(container);
-    editor.reroute = true;
+    editor.reroute = false; // Prevents mobile touch coordinate glitch
     editor.editor_mode = 'edit';
     editor.start();
 
-    // Auto load saved workflow or set default
-    const saved = localStorage.getItem('p1m_workflow');
-    if (saved) {
-      editor.import(JSON.parse(saved));
-    } else {
-      editor.addNode('trigger', 0, 1, 30, 80, 'trigger', { type: 'trigger' }, '<div><b>⚡ Start Trigger</b></div>');
+    // Default Starting Trigger
+    editor.addNode('trigger', 0, 1, 40, 100, 'trigger', {}, '<div><b>⚡ Start Trigger</b></div>');
+
+    let currentSelectedId = null;
+    let lastExecutionData = {};
+    let pendingOutput = null; // Holds { nodeId, outputClass, element }
+
+    function addNode(type) {
+      const offset = 20 + Math.floor(Math.random() * 40);
+      if(type === 'http') {
+        editor.addNode('http', 1, 1, 180 + offset, 120 + offset, 'http', { url: 'https://jsonplaceholder.typicode.com/todos/1', method: 'GET' }, '<div><b>🌐 HTTP API</b></div>');
+      } else {
+        editor.addNode('ai', 1, 1, 180 + offset, 220 + offset, 'ai', { prompt: 'Analyze previous step' }, '<div><b>🤖 AI Agent</b></div>');
+      }
     }
 
-    let currentNodeId = null;
+    // Direct Universal Tap-to-Connect on Pins
+    document.addEventListener('click', function(e) {
+      const outputElem = e.target.closest('.output');
+      const inputElem = e.target.closest('.input');
 
-    function addWebhookNode() {
-      editor.addNode('webhook', 1, 1, 180, 100, 'webhook', { type: 'webhook' }, '<div><b>🔗 Webhook</b></div>');
-    }
+      // Step 1: User taps an OUTPUT pin (Right side dot)
+      if (outputElem) {
+        e.stopPropagation();
+        if (pendingOutput) {
+          pendingOutput.element.classList.remove('pin-active');
+        }
+        const nodeDiv = outputElem.closest('.drawflow-node');
+        const nodeId = nodeDiv.id.replace('node-', '');
+        
+        pendingOutput = { nodeId: nodeId, element: outputElem };
+        outputElem.classList.add('pin-active');
+        document.getElementById('console').textContent = `Node #${nodeId} (OUT) selected! Ab target node ke Left dot (IN) par tap karein.`;
+        return;
+      }
 
-    function addHttpNode() {
-      editor.addNode('http', 1, 1, 200, 200, 'http', { type: 'http', method: 'GET', url: 'https://jsonplaceholder.typicode.com/todos/1' }, '<div><b>🌐 HTTP API</b></div>');
-    }
+      // Step 2: User taps an INPUT pin (Left side dot)
+      if (inputElem && pendingOutput) {
+        e.stopPropagation();
+        const targetNodeDiv = inputElem.closest('.drawflow-node');
+        const targetNodeId = targetNodeDiv.id.replace('node-', '');
 
-    editor.on('nodeSelected', function(id) {
-      currentNodeId = id;
-      const node = editor.getNodeFromId(id);
-      document.getElementById('cfgNodeName').value = node.name;
-      document.getElementById('cfgMethod').value = node.data.method || 'GET';
-      document.getElementById('cfgUrl').value = node.data.url || '';
-      document.getElementById('configModal').classList.add('active');
+        if (pendingOutput.nodeId === targetNodeId) {
+          document.getElementById('console').textContent = "Same node par connect nahi kar sakte!";
+        } else {
+          try {
+            editor.addConnection(pendingOutput.nodeId, targetNodeId, 'output_1', 'input_1');
+            document.getElementById('console').textContent = `✅ Connected: Node #${pendingOutput.nodeId} ➔ Node #${targetNodeId}`;
+          } catch(err) {
+            document.getElementById('console').textContent = `Error: ${err.message}`;
+          }
+        }
+
+        pendingOutput.element.classList.remove('pin-active');
+        pendingOutput = null;
+        return;
+      }
+
+      // If clicked elsewhere, reset pending connection
+      if (!outputElem && !inputElem && pendingOutput) {
+        pendingOutput.element.classList.remove('pin-active');
+        pendingOutput = null;
+      }
     });
 
-    function closeModal() {
-      document.getElementById('configModal').classList.remove('active');
+    // Node body click opens settings
+    editor.on('nodeSelected', function(id) {
+      if (pendingOutput) return; // Connecting chal rahi hai toh sheet na khule
+      
+      currentSelectedId = id;
+      const node = editor.getNodeFromId(id);
+      document.getElementById('sheetTitle').textContent = `${node.name.toUpperCase()} (#${id})`;
+      
+      const isAI = (node.name || '').includes('ai');
+      document.getElementById('httpControls').style.display = isAI ? 'none' : 'block';
+      document.getElementById('aiControls').style.display = isAI ? 'block' : 'none';
+
+      if(isAI) {
+        document.getElementById('nodePrompt').value = node.data.prompt || '';
+      } else {
+        document.getElementById('nodeUrl').value = node.data.url || '';
+        document.getElementById('nodeMethod').value = node.data.method || 'GET';
+      }
+
+      const out = lastExecutionData[id] ? JSON.stringify(lastExecutionData[id], null, 2) : "Not executed yet.";
+      document.getElementById('nodeDataOutput').textContent = out;
+
+      document.getElementById('sheet').classList.add('open');
+    });
+
+    function closeSheet() {
+      document.getElementById('sheet').classList.remove('open');
     }
 
-    function saveNodeConfig() {
-      if (!currentNodeId) return;
-      const node = editor.getNodeFromId(currentNodeId);
-      node.data.method = document.getElementById('cfgMethod').value;
-      node.data.url = document.getElementById('cfgUrl').value;
-      document.getElementById('console').textContent = `Node #${currentNodeId} updated.`;
-      closeModal();
+    function saveConfig() {
+      if(!currentSelectedId) return;
+      const node = editor.getNodeFromId(currentSelectedId);
+      if((node.name || '').includes('ai')) {
+        node.data.prompt = document.getElementById('nodePrompt').value;
+      } else {
+        node.data.url = document.getElementById('nodeUrl').value;
+        node.data.method = document.getElementById('nodeMethod').value;
+      }
+      closeSheet();
     }
 
-    function saveWorkflowLocal() {
+    function removeNode() {
+      if(!currentSelectedId) return;
+      editor.removeNodeId(`node-${currentSelectedId}`);
+      closeSheet();
+    }
+
+    function resetCanvas() {
+      editor.clear();
+      editor.addNode('trigger', 0, 1, 40, 100, 'trigger', {}, '<div><b>⚡ Start Trigger</b></div>');
+      lastExecutionData = {};
+      pendingOutput = null;
+      document.getElementById('console').textContent = "Canvas reset.";
+    }
+
+    async function runWorkflow() {
       const data = editor.export();
-      localStorage.setItem('p1m_workflow', JSON.stringify(data));
-      document.getElementById('console').textContent = "Workflow saved locally!";
-    }
+      const con = document.getElementById('console');
+      con.textContent = "Running workflow...";
 
-    async function executeWorkflow() {
-      const data = editor.export();
-      const consoleBox = document.getElementById('console');
-      consoleBox.textContent = "Running workflow...";
+      document.querySelectorAll('.drawflow-node').forEach(el => el.classList.remove('node-success'));
 
       try {
         const res = await fetch('/api/run-workflow', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ graph: data.drawflow.Home.data })
         });
-        const result = await res.json();
-        consoleBox.textContent = "Execution Result: " + JSON.stringify(result, null, 2);
-      } catch (err) {
-        consoleBox.textContent = "Error: " + err.message;
+        const resData = await res.json();
+        
+        if (resData.status === 'success') {
+          lastExecutionData = resData.nodeOutputs || {};
+          resData.executedNodes.forEach((nodeId, idx) => {
+            setTimeout(() => {
+              const el = document.getElementById(`node-${nodeId}`);
+              if (el) el.classList.add('node-success');
+            }, idx * 150);
+          });
+          con.textContent = `Completed: ${resData.executedNodes.length} nodes executed.`;
+        } else {
+          con.textContent = "Failed: " + resData.error;
+        }
+      } catch(e) {
+        con.textContent = "Error: " + e.message;
       }
     }
   </script>
